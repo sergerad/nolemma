@@ -1,0 +1,14 @@
+[package]
+name = "sequencer"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+bincode = "1.3"
+clap = { version = "4.0", features = ["env"] }
+rocket = { version = "0.5", features = ["json"] }
+rollup = { package = "rollup", path = "../rollup", version = "0.1.0" }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+sha2 = "0.10"
+tokio = { version = "1", features = ["full"] }
