@@ -10,8 +10,11 @@ use std::str::FromStr;
 /// A recoverable seckp256k1 signature.
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Signature {
+    /// The r component of the signature.
     pub r: U256,
+    /// The s component of the signature.
     pub s: U256,
+    /// The recovery id of the signature.
     pub recovery_id: i32,
 }
 

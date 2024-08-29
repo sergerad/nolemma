@@ -5,10 +5,14 @@ use crate::{
 /// Permissioned entity responsible for maintaining the canonical [Blockchain].
 /// Receives transactions directly and seals them into blocks.
 pub struct Sequencer {
+    /// The sequencer's signer used to sign blocks.
     signer: Signer,
+    /// The blockchain maintained by the sequencer.
     blockchain: Blockchain,
-    pool: Vec<SignedTransaction>,
-    withdrawals: Vec<SignedTransaction>,
+    /// The pool of transactions to be included in the next block.
+    transactions_pool: Vec<SignedTransaction>,
+    /// The pool of withdrawal transactions to be included in the next block.
+    withdrawals_pool: Vec<SignedTransaction>,
 }
 
 impl Sequencer {
@@ -17,8 +21,8 @@ impl Sequencer {
         Sequencer {
             signer: signer.into(),
             blockchain: Blockchain::default(),
-            pool: vec![],
-            withdrawals: vec![],
+            transactions_pool: vec![],
+            withdrawals_pool: vec![],
         }
     }
 
@@ -27,11 +31,11 @@ impl Sequencer {
         match &transaction.transaction {
             Transaction::Withdrawal(tx) => {
                 self.blockchain.withdraw(tx);
-                self.withdrawals.push(transaction);
+                self.withdrawals_pool.push(transaction);
             }
             Transaction::Dynamic(tx) => {
                 self.blockchain.transact(tx);
-                self.pool.push(transaction);
+                self.transactions_pool.push(transaction);
             }
         }
     }
@@ -51,9 +55,9 @@ impl Sequencer {
         // Drain the transaction pools and construct the block.
         let block = Block::new(
             SignedBlockHeader::new(header, &self.signer),
-            self.pool
+            self.transactions_pool
                 .drain(..)
-                .chain(self.withdrawals.drain(..))
+                .chain(self.withdrawals_pool.drain(..))
                 .collect(),
         );
         self.blockchain.push(block.clone());

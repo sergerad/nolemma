@@ -7,17 +7,22 @@ use crate::signer::{Signature, Signer};
 /// A transaction header containing metadata about the transaction.
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct TransactionHeader {
-    chain_id: u64,
+    /// The address of the sender of the transaction.
     sender: Address,
+    /// The address of the recipient of the transaction.
     recipient: Address,
+    /// The amount of value transferred by the transaction.
     amount: u64,
 }
 
 /// A dynamic transaction containing a transaction header and dynamic fee data.
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct DynamicTxData {
+    /// The transaction header.
     header: TransactionHeader,
+    /// The maximum fee per gas that the sender is willing to pay.
     max_fee_per_gas: u64,
+    /// The maximum priority fee per gas that the sender is willing to pay.
     max_priority_fee_per_gas: u64,
 }
 
@@ -32,7 +37,9 @@ impl DynamicTxData {
 /// A withdrawal transaction containing a transaction header and destination.
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct WithdrawalTxData {
+    /// The transaction header.
     header: TransactionHeader,
+    /// The destination chain of the withdrawal.
     dest_chain: u64,
 }
 
@@ -58,7 +65,6 @@ impl Transaction {
     pub fn dynamic(sender: Address, amount: u64) -> Self {
         Transaction::Dynamic(DynamicTxData {
             header: TransactionHeader {
-                chain_id: 1,
                 sender,
                 recipient: Address::random(),
                 amount,
@@ -72,7 +78,6 @@ impl Transaction {
     pub fn withdrawal(sender: Address, amount: u64, dest_chain: u64) -> Self {
         Transaction::Withdrawal(WithdrawalTxData {
             header: TransactionHeader {
-                chain_id: 1,
                 sender,
                 recipient: sender,
                 amount,

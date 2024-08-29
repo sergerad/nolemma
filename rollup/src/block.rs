@@ -8,11 +8,17 @@ use crate::{Signature, SignedTransaction, Signer};
 /// A block header containing metadata about the block.
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct BlockHeader {
+    /// The address of the sequencer that sealed the block.
     pub sequencer: Address,
+    /// The number of the block.
     pub number: u64,
+    /// The timestamp at the time the block was sealed.
     pub timestamp: u64,
+    /// The hash of the parent block. None if this is the genesis block.
     pub parent_digest: Option<String>,
+    /// The root digest of the withdrawals Merkle tree.
     pub withdrawals_root: String,
+    /// The root digest of the transactions Merkle tree.
     pub transactions_root: String,
 }
 

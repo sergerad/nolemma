@@ -2,8 +2,11 @@ use crate::{transaction::DynamicTxData, Block, WithdrawalTxData};
 
 /// A blockchain containing a list of blocks and an incremental Merkle tree of withdrawals.
 pub(crate) struct Blockchain {
+    /// The chain of blocks in the blockchain.
     pub(crate) blocks: Vec<Block>,
+    /// The incremental Merkle tree of withdrawals.
     pub(crate) withdrawals_tree: imt::Tree<sha2::Sha256>,
+    /// The incremental Merkle tree of transactions.
     pub(crate) transactions_tree: imt::Tree<sha2::Sha256>,
 }
 
