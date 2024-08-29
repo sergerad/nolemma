@@ -7,6 +7,13 @@ Nolemma is a blazingly fast rollup, leveraging a revolutionary architecture that
 
 Because of this design, Nolemma is capable of achieving near real-time block production.
 
+## Repository Structure
+
+The workspace contains the following:
+* `rollup` library crate for all core types and functionality;
+* `sequencer` binary crate for running a sequencer; and
+* `script` binary crate for bootstrapping a local sequencer, sending transactions, and validating sealed blocks.
+
 ## Usage
 
 You can launch a local Nolemma sequencer and send transactions to it through the following command:
