@@ -1,11 +1,13 @@
 use alloy_primitives::bytes::BufMut;
-use alloy_primitives::{keccak256, Address, U256};
+use alloy_primitives::U256;
 use secp256k1::ecdsa::{RecoverableSignature, RecoveryId, Signature as SecpSignature};
 use secp256k1::rand::rngs::OsRng;
 use secp256k1::{Message, Secp256k1};
 use secp256k1::{PublicKey, SecretKey};
 use serde::{Deserialize, Serialize};
 use std::str::FromStr;
+
+use crate::Address;
 
 /// A recoverable seckp256k1 signature.
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -54,8 +56,7 @@ impl From<&str> for Signer {
     fn from(s: &str) -> Self {
         let sk = SecretKey::from_str(s).unwrap();
         let pk = PublicKey::from_secret_key_global(&sk);
-        let digest = keccak256(&pk.serialize_uncompressed()[1..]);
-        let address = Address::from_slice(&digest[12..]);
+        let address = Address::from(pk);
         Signer { sk, pk, address }
     }
 }
@@ -65,8 +66,7 @@ impl Signer {
     pub fn random() -> Signer {
         let secp = Secp256k1::new();
         let (sk, pk) = secp.generate_keypair(&mut OsRng);
-        let digest = keccak256(&pk.serialize_uncompressed()[1..]);
-        let address = Address::from_slice(&digest[12..]);
+        let address = Address::from(pk);
         Signer { sk, pk, address }
     }
 

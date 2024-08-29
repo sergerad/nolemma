@@ -1,9 +1,9 @@
-use alloy_primitives::{keccak256, Address, B256};
+use alloy_primitives::{keccak256, B256};
 use secp256k1::{Message, Secp256k1};
 use serde::{Deserialize, Serialize};
 use std::time::{SystemTime, UNIX_EPOCH};
 
-use crate::{Signature, SignedTransaction, Signer};
+use crate::{Address, Signature, SignedTransaction, Signer};
 
 /// A block header containing metadata about the block.
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -113,8 +113,7 @@ impl Block {
         let pk = secp
             .recover_ecdsa(&msg, &(&self.signed.signature).into())
             .unwrap();
-        let digest = keccak256(&pk.serialize_uncompressed()[1..]);
-        let address = Address::from_slice(&digest[12..]);
+        let address = Address::from(pk);
         secp.verify_ecdsa(&msg, &(&self.signed.signature).into(), &pk)
             .is_ok()
             && self.signed.header.sequencer == address

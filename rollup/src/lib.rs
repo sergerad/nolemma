@@ -15,4 +15,7 @@ pub use sequencer::Sequencer;
 mod blockchain;
 use blockchain::Blockchain;
 
+mod address;
+pub use address::Address;
+
 pub const BLOCK_PERIOD_MILLIS: u64 = 2000;

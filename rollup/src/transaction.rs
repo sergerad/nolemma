@@ -1,8 +1,9 @@
-use alloy_primitives::{keccak256, Address, B256};
+use alloy_primitives::{keccak256, B256};
 use secp256k1::{Message, Secp256k1};
 use serde::{Deserialize, Serialize};
 
 use crate::signer::{Signature, Signer};
+use crate::Address;
 
 /// A transaction header containing metadata about the transaction.
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -126,8 +127,7 @@ impl SignedTransaction {
         let secp = Secp256k1::new();
         let msg = Message::from_digest(self.transaction.hash().into());
         let pk = secp.recover_ecdsa(&msg, &(&self.signature).into()).unwrap();
-        let digest = keccak256(&pk.serialize_uncompressed()[1..]);
-        let address = Address::from_slice(&digest[12..]);
+        let address = Address::from(pk);
         secp.verify_ecdsa(&msg, &(&self.signature).into(), &pk)
             .is_ok()
             && self.transaction.sender() == address
