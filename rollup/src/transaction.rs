@@ -3,11 +3,13 @@ use secp256k1::{Message, Secp256k1};
 use serde::{Deserialize, Serialize};
 
 use crate::signer::{Signature, Signer};
-use crate::Address;
+use crate::{Address, CHAIN_ID};
 
 /// A transaction header containing metadata about the transaction.
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct TransactionHeader {
+    /// The identifier of the chain on which the transaction was intended to be executed.
+    chain_id: u64,
     /// The address of the sender of the transaction.
     sender: Address,
     /// The address of the recipient of the transaction.
@@ -66,6 +68,7 @@ impl Transaction {
     pub fn dynamic(sender: Address, amount: u64) -> Self {
         Transaction::Dynamic(DynamicTxData {
             header: TransactionHeader {
+                chain_id: CHAIN_ID,
                 sender,
                 recipient: Address::random(),
                 amount,
@@ -79,6 +82,7 @@ impl Transaction {
     pub fn withdrawal(sender: Address, amount: u64, dest_chain: u64) -> Self {
         Transaction::Withdrawal(WithdrawalTxData {
             header: TransactionHeader {
+                chain_id: CHAIN_ID,
                 sender,
                 recipient: sender,
                 amount,

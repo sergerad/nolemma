@@ -19,3 +19,4 @@ mod address;
 pub use address::Address;
 
 pub const BLOCK_PERIOD_MILLIS: u64 = 2000;
+pub const CHAIN_ID: u64 = 83479;
