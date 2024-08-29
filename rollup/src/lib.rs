@@ -10,7 +10,7 @@ mod block;
 pub use block::{Block, BlockHeader, SignedBlockHeader};
 
 mod sequencer;
-pub use sequencer::Sequencer;
+pub use sequencer::ArcSequencer;
 
 mod blockchain;
 use blockchain::Blockchain;

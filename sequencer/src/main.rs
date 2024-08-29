@@ -3,12 +3,8 @@ extern crate rocket;
 
 use rocket::State;
 use rocket::{serde::json::Json, Config};
-use rollup::{Sequencer, SignedTransaction, BLOCK_PERIOD_MILLIS};
+use rollup::{ArcSequencer, SignedTransaction};
 use serde_json::{json, Value};
-use std::sync::Arc;
-use tokio::sync::Mutex;
-
-type ArcSequencer = Arc<Mutex<Sequencer>>;
 
 /// Accepts a transaction and adds it to the respective transaction pools.
 #[post("/", data = "<payload>")]
@@ -38,9 +34,8 @@ async fn head(sequencer: &State<ArcSequencer>) -> Value {
 async fn seal_blocks_loop(sequencer: ArcSequencer) {
     tokio::task::spawn(async move {
         loop {
-            tokio::time::sleep(tokio::time::Duration::from_millis(BLOCK_PERIOD_MILLIS)).await;
-            let mut sequencer = sequencer.lock().await;
-            sequencer.seal();
+            let block = sequencer.clone().await;
+            println!("Sealed block: {:?} {}", block.number(), block.hash());
         }
     });
 }
@@ -50,7 +45,7 @@ async fn seal_blocks_loop(sequencer: ArcSequencer) {
 async fn rocket() -> _ {
     // Set up sequencer.
     let sk = std::env::var("KEY").unwrap();
-    let sequencer = Arc::new(Mutex::new(Sequencer::new(sk.as_str())));
+    let sequencer = ArcSequencer::new(sk.as_str());
 
     // Spawn block producing sequencer task.
     seal_blocks_loop(sequencer.clone()).await;

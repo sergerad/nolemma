@@ -1,7 +1,6 @@
 use alloy_primitives::{keccak256, B256};
 use secp256k1::{Message, Secp256k1};
 use serde::{Deserialize, Serialize};
-use std::time::{SystemTime, UNIX_EPOCH};
 
 use crate::{Address, Signature, SignedTransaction, Signer};
 
@@ -23,28 +22,6 @@ pub struct BlockHeader {
 }
 
 impl BlockHeader {
-    /// Creates a new block header.
-    pub fn new(
-        sequencer: Address,
-        number: u64,
-        parent_digest: Option<String>,
-        withdrawals_root: String,
-        transactions_root: String,
-    ) -> Self {
-        let timestamp = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .unwrap()
-            .as_secs();
-        BlockHeader {
-            sequencer,
-            number,
-            timestamp,
-            parent_digest,
-            withdrawals_root,
-            transactions_root,
-        }
-    }
-
     /// Computes the hash of the block header.
     pub fn hash(&self) -> B256 {
         let bytes = bincode::serialize(self).unwrap();

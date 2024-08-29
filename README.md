@@ -27,32 +27,37 @@ A separate process will regularly send signed transactions to the sequencer and 
 
 The output should looking something like this:
 ```sh
-Block 0 verified: true
+Sealed block: 4 0xc33d9a6354174872aa21bf4b4f0cf5ee20e63559f08728cbfc4702a159c060c1
+Block 4 verified: true
 Block {
     signed: SignedBlockHeader {
         header: BlockHeader {
-            sequencer: 0xecfd4745665c6c5b72b2bc558e80a207283f7091,
-            number: 0,
-            timestamp: 1724918355,
-            parent_digest: None,
-            withdrawals_root: "f62a6ed7b5baffb33a21235cf528bb86c37ca38940539e92f6b71f5c26d682b1",
-            transactions_root: "4a9cb97beeb462e562f6d52c54b11172c6dbcafc80de1d46c104a0f860daa7fb",
+            sequencer: Address(
+                0xfdf3d23e0a93f940ecae4fab8ee89fa87ade3345,
+            ),
+            number: 4,
+            timestamp: 1724971199,
+            parent_digest: Some(
+                "0x030403926131dc82f2aabbc98e7f49a2afa3bb8862a58f45dbff5c31f423aa6b",
+            ),
+            withdrawals_root: "f6156eb252cf9385b32bbf9d67c98743a54069ddb82711347bf9de98a4e84a1a",
+            transactions_root: "b7bf4ee47ef33df507312849ea2c511d8b1cac896c9ad4632ac84db27c29be96",
         },
         signature: Signature {
-            r: 37593562742579918054880423626579338602546470885109318820256556408931428206851,
-            s: 37641522295278184479778267846185146638534229227713144928721563320698850950022,
+            r: 99516742611579300247107593222426462760699249586140514477002059713627822811124,
+            s: 52840667303596146942485583793658493738843174190414595374809724448462630931548,
             recovery_id: 0,
         },
     },
     transactions: [
-        0x3d86fd1ad620a6fbabfd37386bd5d75e16992695fff9601e1846a2a1e6f40989,
-        0xd3a71716d8dc3b2a790f5889da122329b0519a602c46f7dd5f2d0727bd95b7cc,
-        0x8de71c98577f73742eb0df55ed8721d886bb2f89645830e0e4f7c2ca8966a0df,
-        0x0dfd72acaee1a8e1d71f5d773894ec907c69da09800965e7cb834744d8ef6bb2,
-        0x25de9af1a9fc56c3c702f7c002a15d06de2de0fc675b49017a3f493a0862a925,
-        0x608b7d34d41e7e7bb76061b41bd49bce70b65d79fea8fa1eb328304ba8bc1afd,
-        0x11bc6f206b6c55fa6de241a7740bfcbe85e01c7cabc47552d5345cfd8d4083b5,
-        0xbc827cb31a81a12874d115042861918d259088fd86927ae89ae7ec2da7e9bffe,
+        0x0917464362e4c08429bbdb02c80d2e8fcd5c1e5d08329f91e102af8ace99e219,
+        0xa5d5f4f8df5b62f4ebb1d60104c61b9cd820d4019862ab7d56578502bfc2a92d,
+        0xd2ae8e2c10b805591fc92339db73969ba1691b250c979b047e272ac54bfa9583,
+        0x1427d8a64d6b39529afcd2c8a1626cf2b033659a4a2ecf3ff77d544233686495,
+        0xa79616ff5ec9ce53e1380ab4de17e21dd6f033debc848c83d4cf6397893d37d9,
+        0x9511ea9207d1be4a2a01098494688711794e31f4f445f545728ea9e46dc5bf8f,
+        0xaa1dbb27eac9340e523d8a06c2e103f49c822e2020c7f2d45d03b50c0183d5e3,
+        0xc94be521f7c4fad1fa52dede7b3a2e222390c3a06c9596bf4287dbef8f7a4653,
     ],
 }
 ```
