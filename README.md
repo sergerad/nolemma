@@ -5,15 +5,7 @@ Nolemma is a blazingly fast rollup, leveraging a revolutionary architecture that
 * Ephemeral; and
 * Useless.
 
-## Cryptographic Operations
-
-### Elliptic Curve Digital Signatures and Keccak Hashes
-
-...
-
-### Incremental Merkle Trees
-
-...
+Because of this design, Nolemma is capable of achieving near real-time block production.
 
 ## Usage
 
@@ -24,7 +16,7 @@ cargo run -p script
 
 The sequencer will run in its own process, sealing blocks at a fixed period and accepting requests to submit transactions.
 
-A separate process will regularly send random transactions to the sequencer and verify resulting blocks.
+A separate process will regularly send signed transactions to the sequencer and verify resulting blocks.
 
 The output should looking something like this:
 ```sh
@@ -58,3 +50,37 @@ Block {
 }
 ```
 
+## Protocol Design
+
+The system is a toy protocol and it is only very partially implemented. The following explains the current implementation and the cryptographic operations involved.
+
+### Sequencing
+
+There is a single, permissioned sequencer. It produces blocks at a fixed period. Blocks are hashed with Keccak256 and signed with secp256k1 ECDSA.
+
+Block headers contain the following:
+* Number
+* Timestamp
+* Parent block digest
+* Sequencer's address
+* Withdrawals Merkle tree root
+* Transactions Merkle tree root
+* Sequencer's signature of the bock
+
+The remainder of block data is consumed by transactions that were sealed into the block.
+
+### Transaction Types and Lifecycle
+
+Nolemma currently supports two types of transactions - dynamic and withdrawal.
+
+Dynamic transctions are simply EIP-1559 style transactions.
+
+Withdrawals are a custom transaction type used for withdrawing funds from the L2.
+
+L2 transaction finality depends on verification of validity proofs on L1. This feature is not yet implemented.
+
+### Withdrawals
+
+Withdrawal transctions are a custom type of transaction supported by Nolemma.
+
+When withdrawal transactions are sealed into blocks, they are added to an incremental Merkle tree. This tree is treated as an "exit tree" for withdrawals. The L1 smart contract relies on Merkle proofs of withdrawal transactions against the root of the tree in order to execute the final step of a withdrawal - its exit on L1.
