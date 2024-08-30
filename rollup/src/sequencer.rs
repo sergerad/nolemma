@@ -121,6 +121,8 @@ impl Future for ArcSequencer {
 
 #[cfg(test)]
 mod tests {
+    use tokio::task::JoinSet;
+
     use super::*;
 
     #[tokio::test]
@@ -145,5 +147,33 @@ mod tests {
         assert_eq!(block.transactions[0], transaction);
         assert_eq!(sequencer.head().unwrap(), block);
         assert!(block.verify());
+    }
+
+    #[tokio::test]
+    async fn test_concurrent_sequencers() {
+        // Create a sequencer.
+        let signer = Signer::random();
+        let sequencer = ArcSequencer::new(signer);
+
+        // Spawn concurrent tasks to add transactions and seal blocks.
+        let mut set = JoinSet::new();
+        for _ in 0..10 {
+            let sequencer = sequencer.clone();
+            let task = tokio::task::spawn(async move {
+                let mut sequencer = sequencer.lock().await;
+                let transaction = SignedTransaction::new(
+                    Transaction::dynamic(sequencer.signer.address, 100, 1),
+                    &sequencer.signer,
+                );
+                sequencer.add_transaction(transaction);
+                sequencer.seal()
+            });
+            set.spawn(task);
+        }
+
+        // Join the tasks and verify the blocks.
+        while let Some(r) = set.join_next().await {
+            assert!(r.unwrap().unwrap().verify());
+        }
     }
 }
