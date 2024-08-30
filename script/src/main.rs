@@ -23,15 +23,22 @@ async fn run_sequencer(sk: SecretKey) {
 }
 
 /// Sends the provided transaction to the sequencer and waits for the response.
-async fn send_transaction(tx: SignedTransaction) {
-    if let Err(e) = reqwest::Client::new()
+async fn send_transaction(tx: SignedTransaction) -> Result<reqwest::Response, reqwest::Error> {
+    reqwest::Client::new()
         .post(&format!("http://{}/", SEQUENCER_URL))
         .json(&tx)
         .send()
         .await
-    {
+}
+
+/// Sleeps for a short period of time and prints an error message.
+async fn handle_request_err(e: reqwest::Error) {
+    if e.is_connect() {
+        println!("Sequencer not available yet, retrying...");
+    } else {
         println!("Error sending transaction: {:?}", e);
     }
+    tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
 }
 
 /// Infinitely sends transactions to the sequencer.
@@ -43,13 +50,19 @@ async fn tx_loop() {
         let signer = Signer::random();
         let transaction = Transaction::dynamic(signer.address, i);
         let signed = SignedTransaction::new(transaction, &signer);
-        send_transaction(signed).await;
+        if let Err(e) = send_transaction(signed).await {
+            handle_request_err(e).await;
+            continue;
+        }
 
         // Send a withdrawal transaction.
-        let dest_chain = 2u64;
+        let dest_chain = 1u64;
         let transaction = Transaction::withdrawal(signer.address, i, dest_chain);
         let signed = SignedTransaction::new(transaction, &signer);
-        send_transaction(signed).await;
+        if let Err(e) = send_transaction(signed).await {
+            handle_request_err(e).await;
+            continue;
+        }
 
         // Wait before sending the next transactions.
         tokio::time::sleep(tokio::time::Duration::from_millis(BLOCK_PERIOD_MILLIS / 4)).await;
