@@ -101,3 +101,27 @@ impl Block {
         self.signed.header.number
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_block_verify() {
+        let signer = Signer::random();
+        let header = BlockHeader {
+            sequencer: signer.address,
+            number: 0,
+            timestamp: 0,
+            parent_digest: None,
+            withdrawals_root: "0".to_string(),
+            transactions_root: "0".to_string(),
+        };
+        let hash = header.hash();
+        assert_eq!(hash, header.hash());
+
+        let signed = SignedBlockHeader::new(header.clone(), &signer);
+        let block = Block::new(signed, vec![]);
+        assert!(block.verify());
+    }
+}

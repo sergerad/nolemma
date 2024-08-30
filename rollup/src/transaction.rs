@@ -137,3 +137,22 @@ impl SignedTransaction {
             && self.transaction.sender() == address
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_transaction() {
+        // Create a dynamic transaction and verify.
+        let signer = Signer::random();
+        let tx = Transaction::dynamic(signer.address, 100);
+        let tx = SignedTransaction::new(tx.clone(), &signer);
+        assert!(tx.verify());
+
+        // Create a withdrawal transaction and verify.
+        let tx = Transaction::withdrawal(signer.address, 100, 1);
+        let tx = SignedTransaction::new(tx.clone(), &signer);
+        assert!(tx.verify());
+    }
+}
