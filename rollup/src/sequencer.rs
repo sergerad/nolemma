@@ -1,7 +1,8 @@
 use std::{
     future::Future,
+    pin::Pin,
     sync::{Arc, Mutex},
-    task::Poll,
+    task::{Context, Poll},
     time::Duration,
 };
 
@@ -108,10 +109,7 @@ impl ArcSequencer {
 impl Future for ArcSequencer {
     type Output = Block;
 
-    fn poll(
-        self: std::pin::Pin<&mut Self>,
-        cx: &mut std::task::Context<'_>,
-    ) -> std::task::Poll<Self::Output> {
+    fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
         let mut sequencer = self.get_mut().0.lock().unwrap();
         if sequencer.block_timer.poll_tick(cx).is_ready() {
             Poll::Ready(sequencer.seal())
