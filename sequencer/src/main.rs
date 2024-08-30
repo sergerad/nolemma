@@ -31,7 +31,7 @@ async fn head(sequencer: &State<ArcSequencer>) -> Value {
 }
 
 /// Infinitely seals blocks at a fixed period.
-async fn seal_blocks_loop(sequencer: ArcSequencer) {
+fn seal_blocks_loop(sequencer: ArcSequencer) {
     tokio::task::spawn(async move {
         loop {
             let block = sequencer.clone().await;
@@ -48,7 +48,7 @@ async fn rocket() -> _ {
     let sequencer = ArcSequencer::new(sk.as_str());
 
     // Spawn block producing sequencer task.
-    seal_blocks_loop(sequencer.clone()).await;
+    seal_blocks_loop(sequencer.clone());
 
     // Launch the HTTP server.
     let config = Config {
