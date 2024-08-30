@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 use crate::{Address, Signature, SignedTransaction, Signer};
 
 /// A block header containing metadata about the block.
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq)]
 pub struct BlockHeader {
     /// The address of the sequencer that sealed the block.
     pub sequencer: Address,
@@ -30,7 +30,7 @@ impl BlockHeader {
 }
 
 /// A signed block header containing a block header and a signature.
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq)]
 pub struct SignedBlockHeader {
     header: BlockHeader,
     signature: Signature,
@@ -45,10 +45,10 @@ impl SignedBlockHeader {
 }
 
 /// A block containing a header and a list of transactions.
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, Eq, PartialEq)]
 pub struct Block {
     pub(crate) signed: SignedBlockHeader,
-    transactions: Vec<SignedTransaction>,
+    pub(crate) transactions: Vec<SignedTransaction>,
 }
 
 impl std::fmt::Debug for Block {

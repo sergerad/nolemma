@@ -22,8 +22,8 @@ impl Default for Blockchain {
 
 impl Blockchain {
     /// Returns the head block of the blockchain.
-    pub(crate) fn head(&self) -> Option<&Block> {
-        self.blocks.last()
+    pub(crate) fn head(&self) -> Option<Block> {
+        self.blocks.last().cloned()
     }
 
     /// Returns the height of the blockchain.

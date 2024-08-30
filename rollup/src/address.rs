@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 
 /// A newtype wrapper around an Ethereum address.
 /// Allows conversion from a public key.
-#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Address(AlloyAddress);
 
 impl From<PublicKey> for Address {

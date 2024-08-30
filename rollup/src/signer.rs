@@ -10,7 +10,7 @@ use std::str::FromStr;
 use crate::Address;
 
 /// A recoverable seckp256k1 signature.
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq)]
 pub struct Signature {
     /// The r component of the signature.
     pub r: U256,

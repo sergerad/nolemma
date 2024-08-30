@@ -83,7 +83,7 @@ impl Sequencer {
     }
 
     /// Returns the head block of the blockchain.
-    pub fn head(&self) -> Option<&Block> {
+    pub fn head(&self) -> Option<Block> {
         self.blockchain.head()
     }
 }
@@ -118,5 +118,34 @@ impl Future for ArcSequencer {
         } else {
             Poll::Pending
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn test_sequencer() {
+        // Create a sequencer.
+        let signer = Signer::random();
+        let sequencer = ArcSequencer::new(signer);
+        let mut sequencer = sequencer.lock().await;
+
+        // Add a transaction to the sequencer.
+        let transaction = SignedTransaction::new(
+            Transaction::dynamic(sequencer.signer.address, 100),
+            &sequencer.signer,
+        );
+        sequencer.add_transaction(transaction.clone());
+
+        // Seal the block.
+        let block = sequencer.seal();
+
+        // Validate the block.
+        assert_eq!(block.transactions.len(), 1);
+        assert_eq!(block.transactions[0], transaction);
+        assert_eq!(sequencer.head().unwrap(), block);
+        assert!(block.verify());
     }
 }

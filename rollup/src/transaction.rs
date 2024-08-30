@@ -6,7 +6,7 @@ use crate::signer::{Signature, Signer};
 use crate::{Address, CHAIN_ID};
 
 /// A transaction header containing metadata about the transaction.
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq)]
 pub struct TransactionHeader {
     /// The identifier of the chain on which the transaction was intended to be executed.
     chain_id: u64,
@@ -19,7 +19,7 @@ pub struct TransactionHeader {
 }
 
 /// A dynamic transaction containing a transaction header and dynamic fee data.
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq)]
 pub struct DynamicTxData {
     /// The transaction header.
     header: TransactionHeader,
@@ -38,7 +38,7 @@ impl DynamicTxData {
 }
 
 /// A withdrawal transaction containing a transaction header and destination.
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq)]
 pub struct WithdrawalTxData {
     /// The transaction header.
     header: TransactionHeader,
@@ -55,7 +55,7 @@ impl WithdrawalTxData {
 }
 
 /// A transaction containing either dynamic or withdrawal transaction data.
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq)]
 pub enum Transaction {
     Dynamic(DynamicTxData),
     Withdrawal(WithdrawalTxData),
@@ -109,7 +109,7 @@ impl Transaction {
 }
 
 /// A signed transaction containing a transaction and signature.
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq)]
 pub struct SignedTransaction {
     pub transaction: Transaction,
     pub signature: Signature,
