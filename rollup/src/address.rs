@@ -9,6 +9,7 @@ pub struct Address(AlloyAddress);
 
 impl From<PublicKey> for Address {
     fn from(pk: PublicKey) -> Self {
+        // The last 20 bytes of the public key's keccak256 hash is the address.
         let digest = keccak256(&pk.serialize_uncompressed()[1..]);
         Address(AlloyAddress::from_slice(&digest[12..]))
     }

@@ -64,7 +64,12 @@ Block {
 
 ## Protocol Design
 
-The system is a toy protocol and it is only very partially implemented. The following explains the current implementation and the cryptographic operations involved.
+The system is a toy protocol and it is only very partially implemented.
+
+The key cryptographic primitives used by the protocol are the following:
+* ECDSA secp256k1 for signatures of both transactions and blocks;
+* Keccak256 for all hashing purposes including ECDSA, content-addressable IDs (transaction and block hashes), as well as construction of Addresses (last 20 bytes of the hash); and
+* Incremental Merkle trees for withdrawal transactions which allows for L2->L1 transfers via Merkle proofs.
 
 ### Sequencing
 
