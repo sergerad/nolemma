@@ -16,6 +16,8 @@ pub struct TransactionHeader {
     recipient: Address,
     /// The amount of value transferred by the transaction.
     amount: u64,
+    /// The nonce of the transaction.
+    nonce: u64,
 }
 
 /// A dynamic transaction containing a transaction header and dynamic fee data.
@@ -65,13 +67,14 @@ pub enum Transaction {
 
 impl Transaction {
     /// Creates a new dynamic transaction.
-    pub fn dynamic(sender: Address, amount: u64) -> Self {
+    pub fn dynamic(sender: Address, amount: u64, nonce: u64) -> Self {
         Transaction::Dynamic(DynamicTxData {
             header: TransactionHeader {
                 chain_id: CHAIN_ID,
                 sender,
-                recipient: Address::random(),
                 amount,
+                recipient: Address::random(),
+                nonce,
             },
             max_fee_per_gas: 0,
             max_priority_fee_per_gas: 0,
@@ -79,12 +82,13 @@ impl Transaction {
     }
 
     /// Creates a new withdrawal transaction.
-    pub fn withdrawal(sender: Address, amount: u64, dest_chain: u64) -> Self {
+    pub fn withdrawal(sender: Address, amount: u64, nonce: u64, dest_chain: u64) -> Self {
         Transaction::Withdrawal(WithdrawalTxData {
             header: TransactionHeader {
                 chain_id: CHAIN_ID,
                 sender,
                 recipient: sender,
+                nonce,
                 amount,
             },
             dest_chain,
@@ -146,12 +150,12 @@ mod tests {
     fn test_transaction() {
         // Create a dynamic transaction and verify.
         let signer = Signer::random();
-        let tx = Transaction::dynamic(signer.address, 100);
+        let tx = Transaction::dynamic(signer.address, 100, 1);
         let tx = SignedTransaction::new(tx.clone(), &signer);
         assert!(tx.verify());
 
         // Create a withdrawal transaction and verify.
-        let tx = Transaction::withdrawal(signer.address, 100, 1);
+        let tx = Transaction::withdrawal(signer.address, 100, 1, 2);
         let tx = SignedTransaction::new(tx.clone(), &signer);
         assert!(tx.verify());
     }

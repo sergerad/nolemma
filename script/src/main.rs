@@ -48,7 +48,7 @@ async fn tx_loop() {
     for i in 0.. {
         // Send a deposit transaction.
         let signer = Signer::random();
-        let transaction = Transaction::dynamic(signer.address, i);
+        let transaction = Transaction::dynamic(signer.address, i, i);
         let signed = SignedTransaction::new(transaction, &signer);
         if let Err(e) = send_transaction(signed).await {
             handle_request_err(e).await;
@@ -57,7 +57,7 @@ async fn tx_loop() {
 
         // Send a withdrawal transaction.
         let dest_chain = 1u64;
-        let transaction = Transaction::withdrawal(signer.address, i, dest_chain);
+        let transaction = Transaction::withdrawal(signer.address, i, dest_chain, i);
         let signed = SignedTransaction::new(transaction, &signer);
         if let Err(e) = send_transaction(signed).await {
             handle_request_err(e).await;

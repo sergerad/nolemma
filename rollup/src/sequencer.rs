@@ -132,7 +132,7 @@ mod tests {
 
         // Add a transaction to the sequencer.
         let transaction = SignedTransaction::new(
-            Transaction::dynamic(sequencer.signer.address, 100),
+            Transaction::dynamic(sequencer.signer.address, 100, 1),
             &sequencer.signer,
         );
         sequencer.add_transaction(transaction.clone());
