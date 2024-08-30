@@ -17,7 +17,7 @@ pub struct Signature {
     /// The s component of the signature.
     pub s: U256,
     /// The recovery id of the signature.
-    pub recovery_id: i32,
+    pub v: i32,
 }
 
 /// Converts a [Signature] into a [SecpSignature].
@@ -36,11 +36,8 @@ impl From<&Signature> for RecoverableSignature {
         let mut buf = Vec::new();
         buf.put_slice(&signature.r.to_be_bytes::<32>());
         buf.put_slice(&signature.s.to_be_bytes::<32>());
-        RecoverableSignature::from_compact(
-            &buf,
-            RecoveryId::from_i32(signature.recovery_id).unwrap(),
-        )
-        .unwrap()
+        RecoverableSignature::from_compact(&buf, RecoveryId::from_i32(signature.v).unwrap())
+            .unwrap()
     }
 }
 
@@ -78,7 +75,7 @@ impl Signer {
         Signature {
             r: U256::try_from_be_slice(&data[..32]).unwrap(),
             s: U256::try_from_be_slice(&data[32..64]).unwrap(),
-            recovery_id: recovery_id.to_i32(),
+            v: recovery_id.to_i32(),
         }
     }
 }
