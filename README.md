@@ -71,6 +71,11 @@ The key cryptographic primitives used by the protocol are the following:
 * Keccak256 for all hashing purposes including ECDSA, content-addressable IDs (transaction and block hashes), as well as construction of Addresses (last 20 bytes of the hash); and
 * Incremental Merkle trees for withdrawal transactions which allows for L2->L1 transfers via Merkle proofs.
 
+If sequencing is ever decentralized, then a BLS signature scheme will likely replace the current ECDSA scheme.
+
+In future, when Nolemma supports validity proofs, it will move to more ZK-friendly primitives such as Poseidon2, Rescue, and Falcon.
+
+
 ### Sequencing
 
 There is a single, permissioned sequencer. It produces blocks at a fixed period. Blocks are hashed with Keccak256 and signed with secp256k1 ECDSA.
