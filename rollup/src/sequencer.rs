@@ -66,7 +66,7 @@ impl Sequencer {
             sequencer: self.signer.address,
             number: self.blockchain.height(),
             timestamp: block_time,
-            parent_digest: self.blockchain.head().map(|b| b.hash().to_string()),
+            parent_digest: self.blockchain.head().map(|b| b.hash()),
             withdrawals_root: format!("{:x}", self.blockchain.withdrawals_tree.root()),
             transactions_root: format!("{:x}", self.blockchain.transactions_tree.root()),
         };

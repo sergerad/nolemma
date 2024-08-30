@@ -14,7 +14,7 @@ pub struct BlockHeader {
     /// The timestamp at the time the block was sealed.
     pub timestamp: u64,
     /// The hash of the parent block. None if this is the genesis block.
-    pub parent_digest: Option<String>,
+    pub parent_digest: Option<B256>,
     /// The root digest of the withdrawals Merkle tree.
     pub withdrawals_root: String,
     /// The root digest of the transactions Merkle tree.
