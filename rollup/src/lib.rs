@@ -1,4 +1,6 @@
 mod transaction;
+use std::time::Duration;
+
 use transaction::WithdrawalTxData;
 pub use transaction::{SignedTransaction, Transaction};
 
@@ -18,5 +20,5 @@ use blockchain::Blockchain;
 mod address;
 pub use address::Address;
 
-pub const BLOCK_PERIOD_MILLIS: u64 = 2000;
+pub const BLOCK_PERIOD: Duration = Duration::from_secs(2);
 pub const CHAIN_ID: u64 = 83479;

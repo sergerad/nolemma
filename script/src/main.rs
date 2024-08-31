@@ -1,4 +1,4 @@
-use rollup::{Block, SignedTransaction, Signer, Transaction, BLOCK_PERIOD_MILLIS};
+use rollup::{Block, SignedTransaction, Signer, Transaction, BLOCK_PERIOD};
 use secp256k1::SecretKey;
 use tokio::process::Command;
 
@@ -38,13 +38,13 @@ async fn handle_request_err(e: reqwest::Error) {
     } else {
         println!("Error sending transaction: {:?}", e);
     }
-    tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
+    tokio::time::sleep(BLOCK_PERIOD).await;
 }
 
 /// Infinitely sends transactions to the sequencer.
 async fn tx_loop() {
     // Wait for the sequencer to start.
-    tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
+    tokio::time::sleep(BLOCK_PERIOD).await;
     for i in 0.. {
         // Send a deposit transaction.
         let signer = Signer::random();
@@ -65,13 +65,13 @@ async fn tx_loop() {
         }
 
         // Wait before sending the next transactions.
-        tokio::time::sleep(tokio::time::Duration::from_millis(BLOCK_PERIOD_MILLIS / 4)).await;
+        tokio::time::sleep(BLOCK_PERIOD / 4).await;
     }
 }
 
 async fn head_loop() {
     // Wait for some blocks.
-    tokio::time::sleep(tokio::time::Duration::from_millis(BLOCK_PERIOD_MILLIS * 2)).await;
+    tokio::time::sleep(BLOCK_PERIOD * 2).await;
     loop {
         // Get the head block from the sequencer.
         match reqwest::get(&format!("http://{}/", SEQUENCER_URL)).await {
@@ -92,7 +92,7 @@ async fn head_loop() {
                 println!("Error getting head block: {:?}", e);
             }
         }
-        tokio::time::sleep(tokio::time::Duration::from_millis(BLOCK_PERIOD_MILLIS)).await;
+        tokio::time::sleep(BLOCK_PERIOD).await;
     }
 }
 

@@ -3,12 +3,11 @@ use std::{
     pin::Pin,
     sync::{Arc, Mutex},
     task::{Context, Poll},
-    time::Duration,
 };
 
 use crate::{
     Block, BlockHeader, Blockchain, SignedBlockHeader, SignedTransaction, Signer, Transaction,
-    BLOCK_PERIOD_MILLIS,
+    BLOCK_PERIOD,
 };
 
 /// Permissioned entity responsible for maintaining the canonical [Blockchain].
@@ -34,7 +33,7 @@ impl Sequencer {
             blockchain: Blockchain::default(),
             transactions_pool: vec![],
             withdrawals_pool: vec![],
-            block_timer: tokio::time::interval(Duration::from_millis(BLOCK_PERIOD_MILLIS)),
+            block_timer: tokio::time::interval(BLOCK_PERIOD),
         }
     }
 
