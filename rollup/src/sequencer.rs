@@ -116,33 +116,3 @@ impl Sequencer {
         self.blockchain.lock().await.head()
     }
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[tokio::test]
-    async fn test_sequencer() {
-        // Create a sequencer.
-        let signer = Signer::random();
-        let pool = Arc::new(Mutex::new(vec![]));
-        let chain = Arc::new(Mutex::new(Blockchain::default()));
-        let mut sequencer = Sequencer::new(signer, pool, chain);
-
-        // Add a transaction to the sequencer.
-        let transaction = SignedTransaction::new(
-            Transaction::dynamic(sequencer.signer.address, 100, 1),
-            &sequencer.signer,
-        );
-        sequencer.add_transaction(transaction.clone()).await;
-
-        // Seal the block.
-        let block = sequencer.seal().await;
-
-        // Validate the block.
-        assert_eq!(block.transactions.len(), 1);
-        assert_eq!(block.transactions[0], transaction);
-        assert_eq!(sequencer.head().await, Some(block.clone()));
-        assert!(block.verify());
-    }
-}

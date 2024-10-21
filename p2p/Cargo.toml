@@ -1,0 +1,19 @@
+[package]
+name = "p2p"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+tokio = { workspace = true, features = ["full"] }
+async-trait = "0.1"
+futures = "0.3.30"
+libp2p = { version = "^0.53", features = [
+	"tokio",
+	"gossipsub",
+	"mdns",
+	"noise",
+	"macros",
+	"tcp",
+	"yamux",
+	"quic",
+] }

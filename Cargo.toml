@@ -1,7 +1,7 @@
 [workspace]
 
 resolver = "2"
-members = ["rollup", "script", "sequencer"]
+members = ["rollup", "script", "sequencer", "p2p"]
 
 [workspace.dependencies]
 alloy-primitives = { version = "0.8.0", features = ["rand", "serde"] }
