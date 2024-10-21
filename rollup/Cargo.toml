@@ -10,5 +10,7 @@ imt = { git = "https://github.com/sergerad/incremental-merkle-tree" }
 secp256k1 = { workspace = true }
 serde_json = { workspace = true }
 serde = { workspace = true }
+log = { workspace = true }
+env_logger = { workspace = true }
 sha2 = "0.10"
 tokio = { version = "1", features = ["full"] }

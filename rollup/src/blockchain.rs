@@ -1,7 +1,7 @@
 use crate::{transaction::DynamicTxData, Block, WithdrawalTxData};
 
 /// A blockchain containing a list of blocks and an incremental Merkle tree of withdrawals.
-pub(crate) struct Blockchain {
+pub struct Blockchain {
     /// The chain of blocks in the blockchain.
     pub(crate) blocks: Vec<Block>,
     /// The incremental Merkle tree of withdrawals.
@@ -22,7 +22,7 @@ impl Default for Blockchain {
 
 impl Blockchain {
     /// Returns the head block of the blockchain.
-    pub(crate) fn head(&self) -> Option<Block> {
+    pub fn head(&self) -> Option<Block> {
         self.blocks.last().cloned()
     }
 

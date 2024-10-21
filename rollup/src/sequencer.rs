@@ -1,14 +1,27 @@
-use std::{
-    future::Future,
-    pin::Pin,
-    sync::{Arc, Mutex},
-    task::{Context, Poll},
-};
+use std::sync::Arc;
+
+use log::info;
+use tokio::sync::Mutex;
 
 use crate::{
     Block, BlockHeader, Blockchain, SignedBlockHeader, SignedTransaction, Signer, Transaction,
     BLOCK_PERIOD,
 };
+
+pub struct TransactionSubmitter {
+    transactions_pool: Arc<Mutex<Vec<SignedTransaction>>>,
+}
+
+impl TransactionSubmitter {
+    pub fn new(transactions_pool: Arc<Mutex<Vec<SignedTransaction>>>) -> Self {
+        TransactionSubmitter { transactions_pool }
+    }
+
+    pub async fn submit(&self, transaction: SignedTransaction) {
+        let transactions_pool = self.transactions_pool.clone();
+        transactions_pool.lock().await.push(transaction);
+    }
+}
 
 /// Permissioned entity responsible for maintaining the canonical [Blockchain].
 /// Receives transactions directly and seals them into blocks.
@@ -16,9 +29,9 @@ pub struct Sequencer {
     /// The sequencer's signer used to sign blocks.
     signer: Signer,
     /// The blockchain maintained by the sequencer.
-    blockchain: Blockchain,
+    blockchain: Arc<Mutex<Blockchain>>,
     /// The pool of transactions to be included in the next block.
-    transactions_pool: Vec<SignedTransaction>,
+    transactions_pool: Arc<Mutex<Vec<SignedTransaction>>>,
     /// The pool of withdrawal transactions to be included in the next block.
     withdrawals_pool: Vec<SignedTransaction>,
     /// Interval of time between blocks.
@@ -27,33 +40,46 @@ pub struct Sequencer {
 
 impl Sequencer {
     /// Creates a new permissioned [Sequencer].
-    pub fn new(signer: impl Into<Signer>) -> Self {
+    pub fn new(
+        signer: impl Into<Signer>,
+        transactions_pool: Arc<Mutex<Vec<SignedTransaction>>>,
+        blockchain: Arc<Mutex<Blockchain>>,
+    ) -> Self {
         Sequencer {
             signer: signer.into(),
-            blockchain: Blockchain::default(),
-            transactions_pool: vec![],
+            transactions_pool,
+            blockchain,
             withdrawals_pool: vec![],
             block_timer: tokio::time::interval(BLOCK_PERIOD),
         }
     }
 
+    /// Runs the sequencer's main loop.
+    pub async fn run(&mut self) {
+        loop {
+            self.block_timer.tick().await;
+            let block = self.seal().await;
+            info!("Sealed block: {:?}", block);
+        }
+    }
+
     /// Adds a transaction to the pool to be included in the next block.
-    pub fn add_transaction(&mut self, transaction: SignedTransaction) {
+    pub async fn add_transaction(&mut self, transaction: SignedTransaction) {
         match &transaction.transaction {
             Transaction::Withdrawal(tx) => {
-                self.blockchain.withdraw(tx);
+                self.blockchain.lock().await.withdraw(tx);
                 self.withdrawals_pool.push(transaction);
             }
             Transaction::Dynamic(tx) => {
-                self.blockchain.transact(tx);
-                self.transactions_pool.push(transaction);
+                self.blockchain.lock().await.transact(tx);
+                self.transactions_pool.lock().await.push(transaction);
             }
         }
     }
 
     /// Creates the latest canonical block and signs.
     /// Transaction pools are cleared during this process.
-    pub fn seal(&mut self) -> Block {
+    pub async fn seal(&mut self) -> Block {
         // Record the time the latest block time.
         let block_time = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
@@ -61,118 +87,62 @@ impl Sequencer {
             .as_secs();
 
         // Construct the block header.
+        let mut chain = self.blockchain.lock().await;
         let header = BlockHeader {
             sequencer: self.signer.address,
-            number: self.blockchain.height(),
+            number: chain.height(),
             timestamp: block_time,
-            parent_digest: self.blockchain.head().map(|b| b.hash()),
-            withdrawals_root: format!("{:x}", self.blockchain.withdrawals_tree.root()),
-            transactions_root: format!("{:x}", self.blockchain.transactions_tree.root()),
+            parent_digest: chain.head().map(|b| b.hash()),
+            withdrawals_root: format!("{:x}", chain.withdrawals_tree.root()),
+            transactions_root: format!("{:x}", chain.transactions_tree.root()),
         };
 
         // Drain the transaction pools and construct the block.
         let block = Block::new(
             SignedBlockHeader::new(header, &self.signer),
             self.transactions_pool
+                .lock()
+                .await
                 .drain(..)
                 .chain(self.withdrawals_pool.drain(..))
                 .collect(),
         );
-        self.blockchain.push(block.clone());
+        chain.push(block.clone());
         block
     }
 
     /// Returns the head block of the blockchain.
-    pub fn head(&self) -> Option<Block> {
-        self.blockchain.head()
-    }
-}
-
-/// A shared, thread-safe [Sequencer].
-#[derive(Clone)]
-pub struct ArcSequencer(Arc<Mutex<Sequencer>>);
-
-impl ArcSequencer {
-    /// Creates a new [ArcSequencer] from a [Sequencer].
-    pub fn new(signer: impl Into<Signer>) -> Self {
-        ArcSequencer(Arc::new(Mutex::new(Sequencer::new(signer))))
-    }
-
-    /// Locks the sequencer for exclusive access.
-    pub async fn lock(&self) -> std::sync::MutexGuard<'_, Sequencer> {
-        self.0.lock().unwrap()
-    }
-}
-
-/// A future that infinitely seals blocks at a fixed period.
-impl Future for ArcSequencer {
-    type Output = Block;
-
-    fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
-        let mut sequencer = self.get_mut().0.lock().unwrap();
-        if sequencer.block_timer.poll_tick(cx).is_ready() {
-            Poll::Ready(sequencer.seal())
-        } else {
-            Poll::Pending
-        }
+    pub async fn head(&self) -> Option<Block> {
+        self.blockchain.lock().await.head()
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use tokio::task::JoinSet;
-
     use super::*;
 
     #[tokio::test]
     async fn test_sequencer() {
         // Create a sequencer.
         let signer = Signer::random();
-        let sequencer = ArcSequencer::new(signer);
-        let mut sequencer = sequencer.lock().await;
+        let pool = Arc::new(Mutex::new(vec![]));
+        let chain = Arc::new(Mutex::new(Blockchain::default()));
+        let mut sequencer = Sequencer::new(signer, pool, chain);
 
         // Add a transaction to the sequencer.
         let transaction = SignedTransaction::new(
             Transaction::dynamic(sequencer.signer.address, 100, 1),
             &sequencer.signer,
         );
-        sequencer.add_transaction(transaction.clone());
+        sequencer.add_transaction(transaction.clone()).await;
 
         // Seal the block.
-        let block = sequencer.seal();
+        let block = sequencer.seal().await;
 
         // Validate the block.
         assert_eq!(block.transactions.len(), 1);
         assert_eq!(block.transactions[0], transaction);
-        assert_eq!(sequencer.head().unwrap(), block);
+        assert_eq!(sequencer.head().await, Some(block.clone()));
         assert!(block.verify());
-    }
-
-    #[tokio::test]
-    async fn test_concurrent_sequencers() {
-        // Create a sequencer.
-        let signer = Signer::random();
-        let sequencer = ArcSequencer::new(signer);
-
-        // Spawn concurrent tasks to add transactions and seal blocks.
-        let mut set = JoinSet::new();
-        for _ in 0..10 {
-            let sequencer = sequencer.clone();
-            let task = tokio::task::spawn(async move {
-                let mut sequencer = sequencer.lock().await;
-                let transaction = SignedTransaction::new(
-                    Transaction::dynamic(sequencer.signer.address, 100, 1),
-                    &sequencer.signer,
-                );
-                sequencer.add_transaction(transaction);
-                sequencer.seal()
-            });
-            set.spawn(task);
-        }
-
-        // Join the tasks and verify the blocks.
-        while let Some(r) = set.join_next().await {
-            assert!(r.unwrap().unwrap().verify());
-        }
     }
 }

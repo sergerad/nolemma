@@ -1,21 +1,26 @@
 #[macro_use]
 extern crate rocket;
 
+use std::sync::Arc;
+
 use rocket::State;
 use rocket::{serde::json::Json, Config};
-use rollup::{ArcSequencer, SignedTransaction};
+use rollup::{Blockchain, Sequencer, SignedTransaction, TransactionSubmitter};
 use serde_json::{json, Value};
+use tokio::sync::Mutex;
 
 /// Accepts a transaction and adds it to the respective transaction pools.
 #[post("/", data = "<payload>")]
-async fn submit(sequencer: &State<ArcSequencer>, payload: Json<SignedTransaction>) -> Value {
+async fn submit(
+    submitter: &State<TransactionSubmitter>,
+    payload: Json<SignedTransaction>,
+) -> Value {
     // Extract the transaction from the payload.
     let transaction = payload.into_inner();
     let tx_digest = transaction.transaction.hash();
 
     // Add the transaction to the pool.
-    let mut sequencer = sequencer.lock().await;
-    sequencer.add_transaction(transaction);
+    submitter.submit(transaction).await;
 
     // Respond with the transaction digest.
     json!({ "tx_digest": tx_digest.to_string() })
@@ -23,32 +28,27 @@ async fn submit(sequencer: &State<ArcSequencer>, payload: Json<SignedTransaction
 
 /// Returns the head block of the blockchain.
 #[get("/")]
-async fn head(sequencer: &State<ArcSequencer>) -> Value {
+async fn head(chain: &State<Arc<Mutex<Blockchain>>>) -> Value {
     // Retrieve the head block from the sequencer and return it.
-    let sequencer = sequencer.lock().await;
-    let head = sequencer.head();
+    let head = chain.lock().await.head();
     json!(head)
-}
-
-/// Infinitely seals blocks at a fixed period.
-fn seal_blocks_loop(sequencer: ArcSequencer) {
-    tokio::task::spawn(async move {
-        loop {
-            let block = sequencer.clone().await;
-            println!("Sealed block: {:?} {}", block.number(), block.hash());
-        }
-    });
 }
 
 #[launch]
 #[tokio::main]
 async fn rocket() -> _ {
+    env_logger::init();
     // Set up sequencer.
     let sk = std::env::var("KEY").unwrap();
-    let sequencer = ArcSequencer::new(sk.as_str());
+    let pool = Arc::new(tokio::sync::Mutex::new(vec![]));
+    let chain = Arc::new(tokio::sync::Mutex::new(Blockchain::default()));
+    let mut sequencer = Sequencer::new(sk.as_str(), pool.clone(), chain.clone());
+    let submitter = TransactionSubmitter::new(pool);
 
     // Spawn block producing sequencer task.
-    seal_blocks_loop(sequencer.clone());
+    tokio::task::spawn(async move {
+        sequencer.run().await;
+    });
 
     // Launch the HTTP server.
     let config = Config {
@@ -58,5 +58,6 @@ async fn rocket() -> _ {
     rocket::build()
         .configure(config)
         .mount("/", routes![submit, head])
-        .manage(sequencer)
+        .manage(submitter)
+        .manage(chain)
 }

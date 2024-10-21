@@ -12,10 +12,10 @@ mod block;
 pub use block::{Block, BlockHeader, SignedBlockHeader};
 
 mod sequencer;
-pub use sequencer::ArcSequencer;
+pub use sequencer::{Sequencer, TransactionSubmitter};
 
 mod blockchain;
-use blockchain::Blockchain;
+pub use blockchain::Blockchain;
 
 mod address;
 pub use address::Address;
