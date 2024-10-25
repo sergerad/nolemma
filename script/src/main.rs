@@ -4,6 +4,7 @@ use tokio::process::Command;
 
 /// Specifies the anticipated URL that the sequencer will listen on.
 const SEQUENCER_URL: &str = "127.0.0.1:8000";
+const RPC_URL: &str = "127.0.0.1:8001";
 
 /// Runs the sequencer process and blocks on it's completion.
 async fn run_sequencer(sk: SecretKey) {
@@ -22,10 +23,25 @@ async fn run_sequencer(sk: SecretKey) {
         .expect("Failure while waiting for sequencer process");
 }
 
+async fn run_rpc() {
+    let mut sequencer = Command::new("cargo")
+        .arg("run")
+        .arg("--bin")
+        .arg("rpc")
+        .arg("--")
+        .kill_on_drop(true)
+        .spawn()
+        .expect("Failed to start sequencer process");
+    let _ = sequencer
+        .wait()
+        .await
+        .expect("Failure while waiting for sequencer process");
+}
+
 /// Sends the provided transaction to the sequencer and waits for the response.
 async fn send_transaction(tx: SignedTransaction) -> Result<reqwest::Response, reqwest::Error> {
     reqwest::Client::new()
-        .post(&format!("http://{}/", SEQUENCER_URL))
+        .post(format!("http://{}/", RPC_URL))
         .json(&tx)
         .send()
         .await
@@ -104,6 +120,9 @@ async fn main() {
     // Run the sequencer.
     tokio::spawn(async move {
         run_sequencer(sk).await;
+    });
+    tokio::spawn(async move {
+        run_rpc().await;
     });
 
     // Continuously check the head block.

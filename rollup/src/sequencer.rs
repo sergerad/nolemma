@@ -1,7 +1,15 @@
 use std::sync::Arc;
 
 use log::info;
-use tokio::sync::Mutex;
+use p2p::GossipMessage;
+use serde_json::json;
+use tokio::{
+    sync::{
+        mpsc::{Receiver, Sender},
+        Mutex,
+    },
+    task,
+};
 
 use crate::{
     Block, BlockHeader, Blockchain, SignedBlockHeader, SignedTransaction, Signer, Transaction,
@@ -10,16 +18,30 @@ use crate::{
 
 pub struct TransactionSubmitter {
     transactions_pool: Arc<Mutex<Vec<SignedTransaction>>>,
+    outbound: Sender<(Vec<u8>, String)>,
 }
 
 impl TransactionSubmitter {
-    pub fn new(transactions_pool: Arc<Mutex<Vec<SignedTransaction>>>) -> Self {
-        TransactionSubmitter { transactions_pool }
+    pub fn new(
+        transactions_pool: Arc<Mutex<Vec<SignedTransaction>>>,
+        outbound: Sender<(Vec<u8>, String)>,
+    ) -> Self {
+        TransactionSubmitter {
+            transactions_pool,
+            outbound,
+        }
     }
 
     pub async fn submit(&self, transaction: SignedTransaction) {
         let transactions_pool = self.transactions_pool.clone();
-        transactions_pool.lock().await.push(transaction);
+        transactions_pool.lock().await.push(transaction.clone());
+        self.outbound
+            .send((
+                json!(transaction).to_string().as_bytes().to_vec(),
+                "transactions".to_string(),
+            ))
+            .await
+            .unwrap();
     }
 }
 
@@ -44,7 +66,26 @@ impl Sequencer {
         signer: impl Into<Signer>,
         transactions_pool: Arc<Mutex<Vec<SignedTransaction>>>,
         blockchain: Arc<Mutex<Blockchain>>,
+        mut inbound: Receiver<GossipMessage>,
     ) -> Self {
+        let tx_pool = transactions_pool.clone();
+        task::spawn(async move {
+            loop {
+                if let Some(msg) = inbound.recv().await {
+                    match msg.topic.as_str() {
+                        "transactions" => {
+                            let transaction: SignedTransaction =
+                                serde_json::from_slice(&msg.data).unwrap();
+                            tx_pool.lock().await.push(transaction);
+                        }
+                        "block" => {
+                            unimplemented!("Handle incoming blocks");
+                        }
+                        _ => {}
+                    }
+                }
+            }
+        });
         Sequencer {
             signer: signer.into(),
             transactions_pool,

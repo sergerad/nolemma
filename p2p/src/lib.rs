@@ -4,7 +4,8 @@ use std::collections::hash_map::DefaultHasher;
 use std::error::Error;
 use std::hash::{Hash, Hasher};
 use std::time::Duration;
-use tokio::{io, select};
+use tokio::sync::mpsc::Receiver;
+use tokio::{io, select, task};
 
 pub use gossipsub::Message as GossipMessage;
 
@@ -72,6 +73,50 @@ impl Network {
         Ok(Self { swarm })
     }
 
+    pub fn start(mut outbound: Receiver<(Vec<u8>, String)>) -> Receiver<GossipMessage> {
+        let (tx, rx) = tokio::sync::mpsc::channel(32);
+        let mut network = Network::new().unwrap();
+        task::spawn(async move {
+            loop {
+                select! {
+                    Some((data, topic)) = outbound.recv() => {
+                        let topic = gossipsub::IdentTopic::new(topic);
+                        if let Err(e) = network.swarm.behaviour_mut().gossipsub.publish(topic, data) {
+                            println!("Failed to publish message: {e}");
+                        }
+                    },
+                    event = network.swarm.select_next_some() => match event {
+                        SwarmEvent::Behaviour(MyBehaviourEvent::Mdns(mdns::Event::Discovered(list))) => {
+                            for (peer_id, _multiaddr) in list {
+                                println!("mDNS discovered a new peer: {peer_id}");
+                                network.swarm.behaviour_mut().gossipsub.add_explicit_peer(&peer_id);
+                            }
+                        },
+                        SwarmEvent::Behaviour(MyBehaviourEvent::Mdns(mdns::Event::Expired(list))) => {
+                            for (peer_id, _multiaddr) in list {
+                                println!("mDNS discover peer has expired: {peer_id}");
+                                network.swarm.behaviour_mut().gossipsub.remove_explicit_peer(&peer_id);
+                            }
+                        },
+                        SwarmEvent::Behaviour(MyBehaviourEvent::Gossipsub(gossipsub::Event::Message {
+                            propagation_source: _peer_id,
+                            message_id: _id,
+                            message,
+                        })) => {
+                            tx.send(message).await.unwrap();
+                        },
+                        SwarmEvent::NewListenAddr { address, .. } => {
+                            println!("Local node is listening on {address}");
+                        }
+                        _ => {
+                        }
+                    }
+                }
+            }
+        });
+        rx
+    }
+
     pub async fn poll(&mut self) -> Result<Option<GossipMessage>, Box<dyn Error>> {
         select! {
             event = self.swarm.select_next_some() => match event {
@@ -90,14 +135,10 @@ impl Network {
                     Ok(None)
                 },
                 SwarmEvent::Behaviour(MyBehaviourEvent::Gossipsub(gossipsub::Event::Message {
-                    propagation_source: peer_id,
-                    message_id: id,
+                    propagation_source: _peer_id,
+                    message_id: _id,
                     message,
                 })) => {
-                    println!(
-                        "poll Got message: '{}' with id: {id} from peer: {peer_id}",
-                        String::from_utf8_lossy(&message.data),
-                    );
                     Ok(Some(message))
                 },
                 SwarmEvent::NewListenAddr { address, .. } => {

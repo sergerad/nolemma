@@ -10,9 +10,11 @@ Because of this design, Nolemma is capable of achieving near real-time block pro
 ## Repository Structure
 
 The workspace contains the following:
+* `p2p` library crate for the basic p2p stack used by all nodes;
 * `rollup` library crate for all core types and functionality;
-* `sequencer` binary crate for running a sequencer; and
-* `script` binary crate for bootstrapping a local sequencer, sending transactions, and validating sealed blocks.
+* `sequencer` binary crate for running a sequencer;
+* `rpc` binary crate for running RPC nodes; and
+* `script` binary crate for bootstrapping a local sequencer and RPC, sending transactions to the RPC, and validating sealed blocks from the sequencer.
 
 ## Usage
 

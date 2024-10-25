@@ -5,7 +5,7 @@ use std::sync::Arc;
 
 use rocket::State;
 use rocket::{serde::json::Json, Config};
-use rollup::{Blockchain, Sequencer, SignedTransaction, TransactionSubmitter};
+use rollup::{Blockchain, SignedTransaction, TransactionSubmitter};
 use serde_json::{json, Value};
 use tokio::sync::Mutex;
 
@@ -39,24 +39,26 @@ async fn head(chain: &State<Arc<Mutex<Blockchain>>>) -> Value {
 async fn rocket() -> _ {
     env_logger::init();
     // Set up sequencer.
-    let sk = std::env::var("KEY").unwrap();
     let pool = Arc::new(tokio::sync::Mutex::new(vec![]));
     let chain = Arc::new(tokio::sync::Mutex::new(Blockchain::default()));
     let (tx_out, rx_out) = tokio::sync::mpsc::channel::<(Vec<u8>, String)>(32);
-    let rx_in = p2p::Network::start(rx_out);
-    let mut sequencer = Sequencer::new(sk.as_str(), pool.clone(), chain.clone(), rx_in);
+    let mut rx_in = p2p::Network::start(rx_out);
     let submitter = TransactionSubmitter::new(pool, tx_out);
 
     // Spawn block producing sequencer task.
     tokio::task::spawn(async move {
-        sequencer.run().await;
+        loop {
+            let msg = rx_in.recv().await.unwrap();
+            println!("RPC Received message: {:?}", msg);
+        }
     });
 
     // Launch the HTTP server.
-    let config = Config {
+    let mut config = Config {
         log_level: rocket::config::LogLevel::Critical,
         ..Config::debug_default()
     };
+    config.port = 8001;
     rocket::build()
         .configure(config)
         .mount("/", routes![submit, head])
