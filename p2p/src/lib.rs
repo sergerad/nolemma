@@ -21,6 +21,7 @@ pub struct Network {
 }
 
 impl Network {
+    /// Creates a new [Network] with Gossipsub and Mdns.
     pub fn new() -> Result<Self, Box<dyn Error>> {
         let mut swarm = libp2p::SwarmBuilder::with_new_identity()
             .with_tokio()
@@ -73,6 +74,7 @@ impl Network {
         Ok(Self { swarm })
     }
 
+    /// Starts the network event loop as an async task.
     pub fn start(mut outbound: Receiver<(Vec<u8>, String)>) -> Receiver<GossipMessage> {
         let (tx, rx) = tokio::sync::mpsc::channel(32);
         let mut network = Network::new().unwrap();
@@ -115,40 +117,5 @@ impl Network {
             }
         });
         rx
-    }
-
-    pub async fn poll(&mut self) -> Result<Option<GossipMessage>, Box<dyn Error>> {
-        select! {
-            event = self.swarm.select_next_some() => match event {
-                SwarmEvent::Behaviour(MyBehaviourEvent::Mdns(mdns::Event::Discovered(list))) => {
-                    for (peer_id, _multiaddr) in list {
-                        println!("mDNS discovered a new peer: {peer_id}");
-                        self.swarm.behaviour_mut().gossipsub.add_explicit_peer(&peer_id);
-                    }
-                    Ok(None)
-                },
-                SwarmEvent::Behaviour(MyBehaviourEvent::Mdns(mdns::Event::Expired(list))) => {
-                    for (peer_id, _multiaddr) in list {
-                        println!("mDNS discover peer has expired: {peer_id}");
-                        self.swarm.behaviour_mut().gossipsub.remove_explicit_peer(&peer_id);
-                    }
-                    Ok(None)
-                },
-                SwarmEvent::Behaviour(MyBehaviourEvent::Gossipsub(gossipsub::Event::Message {
-                    propagation_source: _peer_id,
-                    message_id: _id,
-                    message,
-                })) => {
-                    Ok(Some(message))
-                },
-                SwarmEvent::NewListenAddr { address, .. } => {
-                    println!("Local node is listening on {address}");
-                    Ok(None)
-                }
-                _ => {
-                    Ok(None)
-                }
-            }
-        }
     }
 }
